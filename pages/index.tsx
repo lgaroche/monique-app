@@ -97,11 +97,13 @@ const Home: NextPage = () => {
   }, [API, client])
 
   const handleRandom = useCallback(async () => {
-    if (!stats) {
+    let currentStats = stats
+    if (!currentStats) {
       const res = await fetch(`${API}`)
-      setStats(await res.json() as Stats)
+      currentStats = await res.json() as Stats
+      setStats(currentStats)
     }
-    const index = Math.floor(Math.random() * (stats?.unique_addresses ?? 0))
+    const index = Math.floor(Math.random() * (currentStats.unique_addresses ?? 0))
     push(`/?index=${index}`)
   }, [API, push, stats])
 
