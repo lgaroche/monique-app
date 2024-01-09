@@ -1,53 +1,17 @@
-import '../styles/globals.css';
-import '@rainbow-me/rainbowkit/styles.css';
-import { getDefaultWallets, RainbowKitProvider } from '@rainbow-me/rainbowkit';
-import type { AppProps } from 'next/app';
-import { configureChains, createConfig, WagmiConfig } from 'wagmi';
-import {
-  arbitrum,
-  goerli,
-  mainnet,
-  optimism,
-  polygon,
-  base,
-  zora,
-} from 'wagmi/chains';
-import { publicProvider } from 'wagmi/providers/public';
-
-const { chains, publicClient, webSocketPublicClient } = configureChains(
-  [
-    mainnet,
-    polygon,
-    optimism,
-    arbitrum,
-    base,
-    zora,
-    ...(process.env.NEXT_PUBLIC_ENABLE_TESTNETS === 'true' ? [goerli] : []),
-  ],
-  [publicProvider()]
-);
-
-const { connectors } = getDefaultWallets({
-  appName: 'RainbowKit App',
-  projectId: 'YOUR_PROJECT_ID',
-  chains,
-});
-
-const wagmiConfig = createConfig({
-  autoConnect: true,
-  connectors,
-  publicClient,
-  webSocketPublicClient,
-});
+"use client"
+import "../styles/globals.css"
+import type { AppProps } from "next/app"
+import { Flowbite } from "flowbite-react"
+import Web3Modal from "../context/Web3Modal"
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
-    <WagmiConfig config={wagmiConfig}>
-      <RainbowKitProvider chains={chains}>
+    <Flowbite>
+      <Web3Modal>
         <Component {...pageProps} />
-      </RainbowKitProvider>
-    </WagmiConfig>
-  );
+      </Web3Modal>
+    </Flowbite>
+  )
 }
 
-export default MyApp;
+export default MyApp

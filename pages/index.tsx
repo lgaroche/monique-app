@@ -1,84 +1,235 @@
-import { ConnectButton } from '@rainbow-me/rainbowkit';
-import type { NextPage } from 'next';
-import Head from 'next/head';
-import styles from '../styles/Home.module.css';
+"use client";
+import type { NextPage } from "next"
+import { useCallback, useEffect, useState } from "react"
+import { checksumAddress, isAddress } from "viem"
+import { WORDS } from "../words"
+import { TextInput, Button, Card } from "flowbite-react"
+import { FaTelegramPlane, FaWallet } from "react-icons/fa";
+import { useWeb3Modal } from "@web3modal/wagmi/react"
+import { useAccount, usePublicClient } from "wagmi"
+import { FcNext, FcPrevious } from "react-icons/fc";
+import { useRouter } from "next/router";
+import Link from "next/link";
+
+interface Monic {
+  address: string,
+  index: number,
+  monic: string
+}
+
+interface Stats {
+  last_block: number,
+  unique_addresses: number
+}
+
+interface CardState {
+  address: string,
+  addressValid: boolean,
+  words: string,
+  wordsValid: boolean,
+  monic?: Monic
+}
 
 const Home: NextPage = () => {
+  const { query, push } = useRouter()
+  const { open } = useWeb3Modal()
+  const { address: myAddress } = useAccount()
+  const [stats, setStats] = useState<Stats | undefined>();
+  const client = usePublicClient()
+  const [cardState, setCardState] = useState<CardState>({
+    address: "",
+    addressValid: true,
+    words: "",
+    wordsValid: true
+  })
+  const [helper, setHelper] = useState<string>("-")
+
+  const API = process.env.NEXT_PUBLIC_MONIQUE_API ?? "https://api.monique.app"
+
+  const handleWordsChange = useCallback(async (words: string) => {
+    setCardState(({ ...state }) => ({ ...state, words }))
+    if (!words.split(" ").every((word) => WORDS.includes(word))) {
+      setCardState(({ ...state }) => ({ ...state, wordsValid: false, address: "" }))
+      return
+    }
+    setCardState(({ ...state }) => ({ ...state, wordsValid: true, address: "loading...", addressValid: true }))
+    const res = await fetch(`${API}/resolve/${words}`)
+    if (res.status !== 200) {
+      setCardState(({ ...state }) => ({ ...state, address: "not found", monic: undefined }))
+    } else {
+      const monic = await res.json() as Monic
+      setCardState(({ ...state }) => ({ ...state, address: monic.address, monic }))
+    }
+
+  }, [API])
+
+  const handleAddressChange = useCallback(async (address: string, force: boolean) => {
+    const fetchAddress = async (address: string) => {
+      const res = await fetch(`${API}/alias/${address}`)
+      if (res.status !== 200) {
+        setCardState(({ ...state }) => ({ ...state, words: "not found", monic: undefined, addressValid: true }))
+      } else {
+        const monic = await res.json() as Monic
+        setCardState(({ ...state }) => ({ ...state, words: monic.monic, monic, addressValid: true, wordsValid: true }))
+      }
+    }
+    setCardState(({ ...state }) => ({ ...state, address, words: "loading...", wordsValid: true }))
+    const split = address.split(".")
+    if (isAddress(address)) {
+      address = checksumAddress(address)
+      await fetchAddress(address)
+    } else if (address.includes(".") && (split[split.length - 1].length == 3 || force)) {
+      let ensAddress = null
+      try {
+        ensAddress = await client.getEnsAddress({ name: address })
+        console.log(ensAddress)
+      } catch (e) {
+        console.log(e)
+      }
+      if (ensAddress) {
+        await fetchAddress(ensAddress)
+      } else {
+        setCardState(({ ...state }) => ({ ...state, words: `${address} was not found`, monic: undefined, addressValid: true }))
+      }
+    } else {
+      setCardState(({ ...state }) => ({ ...state, addressValid: false, words: "", wordsValid: true }))
+    }
+  }, [API, client])
+
+  const handleRandom = useCallback(async () => {
+    if (!stats) {
+      const res = await fetch(`${API}`)
+      setStats(await res.json() as Stats)
+    }
+    const index = Math.floor(Math.random() * (stats?.unique_addresses ?? 0))
+    push(`/?index=${index}`)
+  }, [API, push, stats])
+
+  const handlePrevious = useCallback(async () => {
+    if (cardState.monic) {
+      push(`/?index=${cardState.monic.index - 1}`)
+    }
+  }, [cardState.monic, push])
+
+  const handleNext = useCallback(async () => {
+    if (cardState.monic) {
+      push(`/?index=${cardState.monic.index + 1}`)
+    }
+  }, [cardState.monic, push])
+
+  useEffect(() => {
+    if (myAddress) {
+      handleAddressChange(myAddress, false)
+    } else {
+      setCardState(({ ...state }) => ({ ...state, addressValid: true, wordsValid: true, address: "", words: "", monic: undefined }))
+    }
+  }, [myAddress, handleAddressChange])
+
+  useEffect(() => {
+    if (!cardState.addressValid) {
+      setHelper("Invalid address or ENS")
+    } else if (!cardState.wordsValid) {
+      setHelper("Invalid words")
+    } else if (cardState.monic) {
+      const { address } = cardState
+      if (isAddress(address)) {
+        console.log("isAddress", address)
+        client.getEnsName({ address }).then((name) => {
+          console.log("getEnsName", name)
+          setHelper(name ?? address)
+        })
+      } else {
+        setHelper(cardState.monic.address)
+      }
+    } else {
+      setHelper("-")
+    }
+  }, [cardState, client])
+
+  useEffect(() => {
+    if (query.index && !isNaN(Number(query.index))) {
+      (async () => {
+        setCardState(({ ...state }) => ({ ...state, monic: undefined, address: "loading...", words: "loading..." }))
+        const res = await fetch(`${API}/index/${query.index}`)
+        const monic = await res.json() as Monic
+        setCardState(({ ...state }) => ({ ...state, address: monic.address, words: monic.monic, monic }))
+      })()
+    }
+  }, [API, query])
+
+  let failureBorder = "" //"border-red-500 border-2 rounded-lg"
+
   return (
-    <div className={styles.container}>
-      <Head>
-        <title>RainbowKit App</title>
-        <meta
-          content="Generated by @rainbow-me/create-rainbowkit"
-          name="description"
-        />
-        <link href="/favicon.ico" rel="icon" />
-      </Head>
-
-      <main className={styles.main}>
-        <ConnectButton />
-
-        <h1 className={styles.title}>
-          Welcome to <a href="">RainbowKit</a> + <a href="">wagmi</a> +{' '}
-          <a href="https://nextjs.org">Next.js!</a>
-        </h1>
-
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.tsx</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a className={styles.card} href="https://rainbowkit.com">
-            <h2>RainbowKit Documentation &rarr;</h2>
-            <p>Learn how to customize your wallet connection flow.</p>
-          </a>
-
-          <a className={styles.card} href="https://wagmi.sh">
-            <h2>wagmi Documentation &rarr;</h2>
-            <p>Learn how to interact with Ethereum.</p>
-          </a>
-
-          <a
-            className={styles.card}
-            href="https://github.com/rainbow-me/rainbowkit/tree/main/examples"
-          >
-            <h2>RainbowKit Examples &rarr;</h2>
-            <p>Discover boilerplate example RainbowKit projects.</p>
-          </a>
-
-          <a className={styles.card} href="https://nextjs.org/docs">
-            <h2>Next.js Documentation &rarr;</h2>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a
-            className={styles.card}
-            href="https://github.com/vercel/next.js/tree/canary/examples"
-          >
-            <h2>Next.js Examples &rarr;</h2>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            className={styles.card}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          >
-            <h2>Deploy &rarr;</h2>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
+    <div className="container flex flex-col items-center justify-center py-2 pt-20">
+      <Card className="w-5/6 max-w-lg shadow-[0px_10px_60px_15px_rgba(48,80,128,0.4)]">
+        <div className="mb-3 w-full">
+          <form onSubmit={(e) => { e.preventDefault(); handleAddressChange(cardState.address, true) }}>
+            <TextInput
+              value={cardState.address}
+              onChange={({ target }) => handleAddressChange(target.value, false)}
+              className={`font-bold ${cardState.addressValid ? "" : failureBorder}`}
+              addon=""
+              spellCheck={false}
+              placeholder="Ethereum address or ENS"
+            />
+          </form>
         </div>
-      </main>
-
-      <footer className={styles.footer}>
-        <a href="https://rainbow.me" rel="noopener noreferrer" target="_blank">
-          Made with ❤️ by your frens at 🌈
-        </a>
-      </footer>
+        <div className="mb-3 w-full">
+          <TextInput
+            value={cardState.words}
+            onChange={({ target }) => handleWordsChange(target.value)}
+            className={`font-bold ${cardState.addressValid ? "" : failureBorder}`}
+            helperText={helper}
+            placeholder="Monic"
+          />
+        </div>
+        <Button.Group className="w-full">
+          <Button
+            color="gray"
+            disabled={cardState.monic?.index === 0}
+            onClick={handlePrevious}>
+            <FcPrevious />
+          </Button>
+          <Button
+            className="w-full"
+            color="gray"
+            onClick={handleRandom}>
+            {cardState.monic?.index ?? "Get a random Monic"}
+          </Button>
+          <Button
+            color="gray"
+            onClick={handleNext}>
+            <FcNext />
+          </Button>
+        </Button.Group>
+        {myAddress ?
+          <Button.Group className="w-full">
+            <Button
+              onClick={() => handleAddressChange(myAddress, true)}
+              className="w-full">{
+                cardState.address === myAddress ?
+                  "This is you!"
+                  :
+                  "Check my monic"
+              }
+            </Button>
+            <Button onClick={() => open()} color="light"><FaWallet className="h-5 w-5" /></Button>
+          </Button.Group>
+          :
+          <Button
+            className="mb-3"
+            onClick={() => open()}
+          >
+            <FaWallet className="mr-2 h-5 w-5" />
+            My Monic
+          </Button>
+        }
+      </Card>
+      <Link href={process.env.NEXT_PUBLIC_TELEGRAM_LINK ?? "#"}>
+        <FaTelegramPlane className="mt-10" />
+      </Link>
     </div>
-  );
-};
+  )
+}
 
-export default Home;
+export default Home
