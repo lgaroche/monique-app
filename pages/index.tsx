@@ -49,7 +49,7 @@ const Home: NextPage = () => {
   const handleWordsChange = useCallback(async (words: string) => {
     setCardState(({ ...state }) => ({ ...state, words }))
     if (!words.split(" ").every((word) => WORDS.includes(word))) {
-      setCardState(({ ...state }) => ({ ...state, wordsValid: false, address: "" }))
+      setCardState(({ ...state }) => ({ ...state, wordsValid: false, address: "", monic: undefined }))
       return
     }
     setCardState(({ ...state }) => ({ ...state, wordsValid: true, address: "loading...", addressValid: true }))
@@ -181,7 +181,9 @@ const Home: NextPage = () => {
             value={cardState.words}
             onChange={({ target }) => handleWordsChange(target.value)}
             className={`font-bold ${cardState.addressValid ? "" : failureBorder}`}
-            helperText={helper}
+            helperText={
+              <span className="block overflow-hidden text-ellipsis whitespace-nowrap">{helper}</span>
+            }
             placeholder="Monic"
           />
         </div>
