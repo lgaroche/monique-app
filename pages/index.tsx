@@ -254,7 +254,7 @@ const Home: NextPage = () => {
             <p className="mb-2 text-left">
               <strong>Monique</strong> is an address aliasing system for Ethereum.<br />
               Every address that transacted (or received ERC-20 and NFTs, or for every contract created) on mainnet since genesis is assigned a unique 3-words alias. For free.<br />
-              This alias is called a <code>monic</code>. It uses the same dictionnary as <span className="whitespace-nowrap">BIP-19</span> mnemonics.<br />
+              This alias is called a <code>monic</code>. It uses the same dictionary as <span className="whitespace-nowrap">BIP-19</span> mnemonics.<br />
               Monics are an easy way to remember addresses and share them with others.
               This app is a demonstration of the Monique index.<br />
               <a href="#" className="text-blue-500 hover:underline">See the docs</a> for more information
