@@ -233,7 +233,7 @@ const Home: NextPage = () => {
           </Button>
         }
       </Card>
-      <Link href={process.env.NEXT_PUBLIC_TELEGRAM_LINK ?? "#"} className="flex items-center mt-10 mb-10 dark:text-white">
+      <Link href={process.env.NEXT_PUBLIC_TELEGRAM_LINK ?? "#"} target="_blank" className="flex items-center mt-10 mb-10 dark:text-white">
         <FaTelegramPlane className="text-lg" />
       </Link>
       <div className="flex flex-col items-center max-w-lg">
@@ -257,8 +257,8 @@ const Home: NextPage = () => {
               This alias is called a <code>monic</code>. It uses the same dictionary as <span className="whitespace-nowrap">BIP-19</span> mnemonics.<br />
               Monics are an easy way to remember addresses and share them with others.
               This app is a demonstration of the Monique index.<br />
-              <a href="#" className="text-blue-500 hover:underline">See the docs</a> for more information
-              and <a href={process.env.NEXT_PUBLIC_TELEGRAM_LINK ?? "#"} className="text-blue-500 hover:underline">follow Monique</a> on Telegram for updates.<br />
+              <a href="https://github.com/lgaroche/monique-indexer" target="_blank" className="text-blue-500 hover:underline">See the docs</a> for more information
+              and <a href={process.env.NEXT_PUBLIC_TELEGRAM_LINK ?? "#"} className="text-blue-500 hover:underline" target="_blank">follow Monique</a> on Telegram for updates.<br />
               <br />
               Oh, I almost forgot: There will be 2-words monics. Stay tuned!
             </p>
