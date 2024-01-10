@@ -4,10 +4,9 @@ import { useCallback, useEffect, useState } from "react"
 import { checksumAddress, isAddress } from "viem"
 import { WORDS } from "../words"
 import { TextInput, Button, Card } from "flowbite-react"
-import { FaTelegramPlane, FaWallet } from "react-icons/fa";
+import { FaAngleUp, FaAngleDown, FaAngleLeft, FaAngleRight, FaTelegramPlane, FaWallet } from "react-icons/fa";
 import { useWeb3Modal } from "@web3modal/wagmi/react"
 import { useAccount, usePublicClient } from "wagmi"
-import { FcNext, FcPrevious } from "react-icons/fc";
 import { useRouter } from "next/router";
 import Link from "next/link";
 
@@ -33,8 +32,9 @@ interface CardState {
 const Home: NextPage = () => {
   const { query, push } = useRouter()
   const { open } = useWeb3Modal()
+  const [FAQOpen, setFAQOpen] = useState<boolean>(false)
   const { address: myAddress } = useAccount()
-  const [stats, setStats] = useState<Stats | undefined>();
+  const [stats, setStats] = useState<Stats | undefined>()
   const client = usePublicClient()
   const [cardState, setCardState] = useState<CardState>({
     address: "",
@@ -159,6 +159,10 @@ const Home: NextPage = () => {
     }
   }, [API, query])
 
+  const toggleFAQ = useCallback(() => {
+    setFAQOpen((open) => !open)
+  }, [setFAQOpen])
+
   let failureBorder = "" //"border-red-500 border-2 rounded-lg"
 
   return (
@@ -192,7 +196,7 @@ const Home: NextPage = () => {
             color="gray"
             disabled={cardState.monic?.index === 0}
             onClick={handlePrevious}>
-            <FcPrevious />
+            <FaAngleLeft />
           </Button>
           <Button
             className="w-full"
@@ -203,7 +207,7 @@ const Home: NextPage = () => {
           <Button
             color="gray"
             onClick={handleNext}>
-            <FcNext />
+            <FaAngleRight />
           </Button>
         </Button.Group>
         {myAddress ?
@@ -229,10 +233,40 @@ const Home: NextPage = () => {
           </Button>
         }
       </Card>
-      <Link href={process.env.NEXT_PUBLIC_TELEGRAM_LINK ?? "#"}>
-        <FaTelegramPlane className="mt-10" />
+      <Link href={process.env.NEXT_PUBLIC_TELEGRAM_LINK ?? "#"} className="flex items-center mt-10 mb-10 dark:text-white">
+        <FaTelegramPlane className="text-lg" />
       </Link>
-    </div>
+      <div className="flex flex-col items-center max-w-lg">
+        <button
+          onClick={toggleFAQ}
+          className="flex w-auto items-center font-medium text-gray-500 dark:text-gray-400">
+          What&apos;s all this?
+          <span>
+            {FAQOpen ?
+              <FaAngleUp className="ml-1" />
+              :
+              <FaAngleDown className="ml-1" />
+            }
+          </span>
+        </button>
+        <div className={`overflow-hidden transition-all duration-500 ease-in-out ${FAQOpen ? "max-h-screen" : "max-h-0"}`}>
+          <div className="px-5 py-5 text-gray-500 dark:text-gray-400">
+            <p className="mb-2 text-left">
+              <strong>Monique</strong> is an address aliasing system for Ethereum.<br />
+              Every address that transacted (or received ERC-20 and NFTs, or for every contract created) on mainnet since genesis is assigned a unique 3-words alias. For free.<br />
+              This alias is called a <code>monic</code>. It uses the same dictionnary as <span className="whitespace-nowrap">BIP-19</span> mnemonics.<br />
+              Monics are an easy way to remember addresses and share them with others.
+              This app is a demonstration of the Monique index.<br />
+              <a href="#" className="text-blue-500 hover:underline">See the docs</a> for more information
+              and <a href={process.env.NEXT_PUBLIC_TELEGRAM_LINK ?? "#"} className="text-blue-500 hover:underline">follow Monique</a> on Telegram for updates.<br />
+              <br />
+              Oh, I almost forgot: There will be 2-words monics. Stay tuned!
+            </p>
+            <p>👵</p>
+          </div>
+        </div>
+      </div>
+    </div >
   )
 }
 
