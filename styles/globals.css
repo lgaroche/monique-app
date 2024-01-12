@@ -26,4 +26,9 @@ html {
 
 input {
   text-align: center;
+  font-size: 1em !important;
+}
+
+#wordsInput {
+  text-transform: lowercase;
 }

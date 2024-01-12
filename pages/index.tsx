@@ -11,7 +11,7 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 
 interface Monic {
-  address: string,
+  address: `0x${string}`,
   index: number,
   monic: string
 }
@@ -48,17 +48,17 @@ const Home: NextPage = () => {
 
   const handleWordsChange = useCallback(async (words: string) => {
     setCardState(({ ...state }) => ({ ...state, words }))
-    if (!words.split(" ").every((word) => WORDS.includes(word))) {
+    if (!words.split(" ").every((word) => WORDS.includes(word.toLowerCase()))) {
       setCardState(({ ...state }) => ({ ...state, wordsValid: false, address: "", monic: undefined }))
       return
     }
     setCardState(({ ...state }) => ({ ...state, wordsValid: true, address: "loading...", addressValid: true }))
-    const res = await fetch(`${API}/resolve/${words}`)
+    const res = await fetch(`${API}/resolve/${words.toLowerCase()}`)
     if (res.status !== 200) {
       setCardState(({ ...state }) => ({ ...state, address: "not found", monic: undefined }))
     } else {
       const monic = await res.json() as Monic
-      setCardState(({ ...state }) => ({ ...state, address: monic.address, monic }))
+      setCardState(({ ...state }) => ({ ...state, address: checksumAddress(monic.address), monic }))
     }
 
   }, [API])
@@ -89,7 +89,7 @@ const Home: NextPage = () => {
       if (ensAddress) {
         await fetchAddress(ensAddress)
       } else {
-        setCardState(({ ...state }) => ({ ...state, words: `${address} was not found`, monic: undefined, addressValid: true }))
+        setCardState(({ ...state }) => ({ ...state, words: "", monic: undefined, addressValid: false }))
       }
     } else {
       setCardState(({ ...state }) => ({ ...state, addressValid: false, words: "", wordsValid: true }))
@@ -138,10 +138,10 @@ const Home: NextPage = () => {
         console.log("isAddress", address)
         client.getEnsName({ address }).then((name) => {
           console.log("getEnsName", name)
-          setHelper(name ?? address)
+          setHelper(name ?? checksumAddress(address))
         })
       } else {
-        setHelper(cardState.monic.address)
+        setHelper(checksumAddress(cardState.monic.address))
       }
     } else {
       setHelper("-")
@@ -154,7 +154,7 @@ const Home: NextPage = () => {
         setCardState(({ ...state }) => ({ ...state, monic: undefined, address: "loading...", words: "loading..." }))
         const res = await fetch(`${API}/index/${query.index}`)
         const monic = await res.json() as Monic
-        setCardState(({ ...state }) => ({ ...state, address: monic.address, words: monic.monic, monic }))
+        setCardState(({ ...state }) => ({ ...state, address: checksumAddress(monic.address), words: monic.monic, monic }))
       })()
     }
   }, [API, query])
@@ -172,6 +172,7 @@ const Home: NextPage = () => {
           <form onSubmit={(e) => { e.preventDefault(); handleAddressChange(cardState.address, true) }}>
             <TextInput
               value={cardState.address}
+              onFocus={(event) => event.target.select()}
               onChange={({ target }) => handleAddressChange(target.value, false)}
               className={`font-bold ${cardState.addressValid ? "" : failureBorder}`}
               addon=""
@@ -182,9 +183,11 @@ const Home: NextPage = () => {
         </div>
         <div className="mb-3 w-full">
           <TextInput
+            id="wordsInput"
             value={cardState.words}
+            onFocus={(event) => event.target.select()}
             onChange={({ target }) => handleWordsChange(target.value)}
-            className={`font-bold ${cardState.addressValid ? "" : failureBorder}`}
+            className={`lowercase font-bold ${cardState.addressValid ? "" : failureBorder}`}
             helperText={
               <span className="block overflow-hidden text-ellipsis whitespace-nowrap">{helper}</span>
             }
