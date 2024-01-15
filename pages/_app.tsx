@@ -15,7 +15,11 @@ function MyApp({ Component, pageProps }: AppProps) {
         <meta property="og:description" content="Monique is an Ethereum address naming service" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://monique.app" />
-        <meta property="og:image" content="/apple-icon.png" />
+        <meta property="og:image" content="https://monique.app/apple-icon.png" />
+        <meta property="twitter:description" content="Monique is an Ethereum address naming service" />
+        <meta property="twitter:card" content="summary" />
+        <meta property="twitter:title" content="Monique" />
+        <meta property="twitter:image" content="https://monique.app/apple-icon.png" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link
           rel="apple-touch-icon"
