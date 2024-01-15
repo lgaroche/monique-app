@@ -4,6 +4,7 @@ import type { AppProps } from "next/app"
 import { Flowbite } from "flowbite-react"
 import Web3Modal from "../context/Web3Modal"
 import Head from "next/head"
+import { Analytics } from '@vercel/analytics/react';
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
@@ -33,6 +34,7 @@ function MyApp({ Component, pageProps }: AppProps) {
           <Component {...pageProps} />
         </Web3Modal>
       </Flowbite>
+      <Analytics />
     </>
 
   )
