@@ -78,7 +78,7 @@ const Home: NextPage = () => {
     if (isAddress(address)) {
       address = checksumAddress(address)
       await fetchAddress(address)
-    } else if (address.includes(".") && (split[split.length - 1].length == 3 || force)) {
+    } else if (address.includes(".") && (split[split.length - 1].length > 0 || force)) {
       let ensAddress = null
       try {
         ensAddress = await client.getEnsAddress({ name: address })
