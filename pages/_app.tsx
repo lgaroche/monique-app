@@ -1,5 +1,6 @@
 "use client"
 import "../styles/globals.css"
+import "../styles/farcaster.css"
 import type { AppProps } from "next/app"
 import { Flowbite } from "flowbite-react"
 import Web3Modal from "../context/Web3Modal"

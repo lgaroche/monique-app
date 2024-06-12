@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import { checksumAddress, isAddress } from "viem"
 import { WORDS } from "../words"
 import { TextInput, Button, Card } from "flowbite-react"
-import { FaAngleUp, FaAngleDown, FaAngleLeft, FaAngleRight, FaTelegramPlane, FaWallet } from "react-icons/fa";
+import { FaAngleUp, FaAngleDown, FaAngleLeft, FaAngleRight, FaWallet } from "react-icons/fa";
 import { useWeb3Modal } from "@web3modal/wagmi/react"
 import { useAccount, usePublicClient } from "wagmi"
 import { useRouter } from "next/router";
@@ -53,14 +53,17 @@ const Home: NextPage = () => {
       return
     }
     setCardState(({ ...state }) => ({ ...state, wordsValid: true, address: "loading...", addressValid: true }))
-    const res = await fetch(`${API}/resolve/${words.toLowerCase()}`)
-    if (res.status !== 200) {
-      setCardState(({ ...state }) => ({ ...state, address: "not found", monic: undefined }))
-    } else {
-      const monic = await res.json() as Monic
-      setCardState(({ ...state }) => ({ ...state, address: checksumAddress(monic.address), monic }))
+    try {
+      const res = await fetch(`${API}/resolve/${words.toLowerCase()}`)
+      if (res.status !== 200) {
+        setCardState(({ ...state }) => ({ ...state, address: "not found", monic: undefined }))
+      } else {
+        const monic = await res.json() as Monic
+        setCardState(({ ...state }) => ({ ...state, address: checksumAddress(monic.address), monic }))
+      }
+    } catch (e) {
+      console.error(e)
     }
-
   }, [API])
 
   const handleAddressChange = useCallback(async (address: string, force: boolean) => {
@@ -193,6 +196,14 @@ const Home: NextPage = () => {
             }
             placeholder="Monic"
           />
+          {cardState.monic &&
+            <div className="mt-2">
+              View ENS:{" "}
+              <Link href={`https://app.ens.domains/${cardState.words.split(' ').join('.')}.monique.id`} target="_blank" className="text-blue-500 hover:underline">
+                {cardState.words.split(' ').join('.')}.monique.id
+              </Link>
+            </div>
+          }
         </div>
         <Button.Group className="w-full">
           <Button
@@ -205,7 +216,7 @@ const Home: NextPage = () => {
             className="w-full"
             color="gray"
             onClick={handleRandom}>
-            {cardState.monic?.index ?? "Get a random Monic"}
+            View a random Monic
           </Button>
           <Button
             color="gray"
@@ -236,8 +247,8 @@ const Home: NextPage = () => {
           </Button>
         }
       </Card>
-      <Link href={process.env.NEXT_PUBLIC_TELEGRAM_LINK ?? "#"} target="_blank" className="flex items-center mt-10 mb-10 dark:text-white">
-        <FaTelegramPlane className="text-lg" />
+      <Link href={process.env.NEXT_PUBLIC_SOCIAL_LINK ?? "#"} target="_blank" className="flex items-center mt-10 mb-10 dark:text-white">
+        <i className="fc fc-farcaster"></i>
       </Link>
       <div className="flex flex-col items-center max-w-lg">
         <button
@@ -255,13 +266,13 @@ const Home: NextPage = () => {
         <div className={`overflow-hidden transition-all duration-500 ease-in-out ${FAQOpen ? "max-h-screen" : "max-h-0"}`}>
           <div className="px-5 py-5 text-gray-500 dark:text-gray-400">
             <p className="mb-2 text-left">
-              <strong>Monique</strong> is an address aliasing system for Ethereum.<br />
-              Every address that transacted (or received ERC-20 and NFTs, or for every contract created) on mainnet since genesis is assigned a unique 3-words alias. For free.<br />
+              <strong>Monique</strong> is an address naming system for Ethereum.<br />
+              Every address that transacted (or received ERC-20 and NFTs, or for every contract created) on mainnet since genesis is assigned a unique 3-words alias. <b>For free.</b><br />
               This alias is called a <code>monic</code>. It uses the same dictionary as <span className="whitespace-nowrap">BIP-19</span> mnemonics.<br />
               Monics are an easy way to remember addresses and share them with others.
               This app is a demonstration of the Monique index.<br />
               <a href="https://github.com/lgaroche/monique-indexer" target="_blank" className="text-blue-500 hover:underline">See the docs</a> for more information
-              and <a href={process.env.NEXT_PUBLIC_TELEGRAM_LINK ?? "#"} className="text-blue-500 hover:underline" target="_blank">follow Monique</a> on Telegram for updates.<br />
+              and <a href={process.env.NEXT_PUBLIC_SOCIAL_LINK ?? "#"} className="text-blue-500 hover:underline" target="_blank">follow Monique</a> on Farcaster for updates.<br />
               <br />
               Oh, I almost forgot: There will be 2-words monics. Stay tuned!
             </p>
