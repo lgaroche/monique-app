@@ -3,12 +3,16 @@ import type { NextPage } from "next"
 import { useCallback, useEffect, useState } from "react"
 import { checksumAddress, isAddress } from "viem"
 import { WORDS } from "../words"
+import ThemeImage from "../components/ThemeImage";
 import { TextInput, Button, Card } from "flowbite-react"
 import { FaAngleUp, FaAngleDown, FaAngleLeft, FaAngleRight, FaWallet } from "react-icons/fa";
 import { useWeb3Modal } from "@web3modal/wagmi/react"
 import { useAccount, usePublicClient } from "wagmi"
 import { useRouter } from "next/router";
 import Link from "next/link";
+
+import LightEnsMark from "./ens_mark_light.svg"
+import DarkEnsMark from "./ens_mark_dark.svg"
 
 interface Monic {
   address: `0x${string}`,
@@ -197,10 +201,18 @@ const Home: NextPage = () => {
             placeholder="Monic"
           />
           {cardState.monic &&
-            <div className="mt-2">
-              View ENS:{" "}
-              <Link href={`https://app.ens.domains/${cardState.words.split(' ').join('.')}.monique.id`} target="_blank" className="text-blue-500 hover:underline">
-                {cardState.words.split(' ').join('.')}.monique.id
+            <div className="mt-2 p-1 flex justify-center align-baseline shadow-lg border-2 border-blue-400 dark:border-blue-900 bg-blue-50 dark:bg-blue-950 rounded-lg">
+              <ThemeImage
+                srcDark={LightEnsMark}
+                srcLight={DarkEnsMark}
+                alt="ENS Mark"
+                className="h-4 w-auto mr-2 self-center" />
+              <Link
+                href={`https://app.ens.domains/${cardState.words.split(' ').join('.')}.addr.id`}
+                target="_blank"
+                className="text-blue-500 font-semibold hover:underline"
+              >
+                {cardState.words.split(' ').join('.')}.addr.id
               </Link>
             </div>
           }
