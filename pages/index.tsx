@@ -28,7 +28,7 @@ interface Stats {
 interface CardState {
   address: string,
   addressValid: boolean,
-  words: string,
+  words?: string,
   wordsValid: boolean,
   monic?: Monic
 }
@@ -40,6 +40,7 @@ const Home: NextPage = () => {
   const { address: myAddress } = useAccount()
   const [stats, setStats] = useState<Stats | undefined>()
   const client = usePublicClient()
+  const [loading, setLoading] = useState<boolean>(false)
   const [cardState, setCardState] = useState<CardState>({
     address: "",
     addressValid: true,
@@ -51,12 +52,13 @@ const Home: NextPage = () => {
   const API = process.env.NEXT_PUBLIC_MONIQUE_API ?? "https://api.monique.app"
 
   const handleWordsChange = useCallback(async (words: string) => {
+    setLoading(true)
     setCardState(({ ...state }) => ({ ...state, words }))
     if (!words.split(" ").every((word) => WORDS.includes(word.toLowerCase()))) {
       setCardState(({ ...state }) => ({ ...state, wordsValid: false, address: "", monic: undefined }))
       return
     }
-    setCardState(({ ...state }) => ({ ...state, wordsValid: true, address: "loading...", addressValid: true }))
+    setCardState(({ ...state }) => ({ ...state, wordsValid: true, addressValid: true }))
     try {
       const res = await fetch(`${API}/resolve/${words.toLowerCase()}`)
       if (res.status !== 200) {
@@ -68,19 +70,26 @@ const Home: NextPage = () => {
     } catch (e) {
       console.error(e)
     }
+    setLoading(false)
   }, [API])
 
   const handleAddressChange = useCallback(async (address: string, force: boolean) => {
     const fetchAddress = async (address: string) => {
-      const res = await fetch(`${API}/alias/${address}`)
-      if (res.status !== 200) {
-        setCardState(({ ...state }) => ({ ...state, words: "not found", monic: undefined, addressValid: true }))
-      } else {
-        const monic = await res.json() as Monic
-        setCardState(({ ...state }) => ({ ...state, words: monic.monic, monic, addressValid: true, wordsValid: true }))
+      try {
+        const res = await fetch(`${API}/alias/${address}`)
+        if (res.status !== 200) {
+          setCardState(({ ...state }) => ({ ...state, words: undefined, monic: undefined, addressValid: true }))
+        } else {
+          const monic = await res.json() as Monic
+          setCardState(({ ...state }) => ({ ...state, words: monic.monic, monic, addressValid: true, wordsValid: true }))
+        }
+      } catch (e) {
+        console.error(e)
+        setCardState(({ ...state }) => ({ ...state, words: undefined, monic: undefined, addressValid: true }))
       }
     }
-    setCardState(({ ...state }) => ({ ...state, address, words: "loading...", wordsValid: true }))
+    setLoading(true)
+    setCardState(({ ...state }) => ({ ...state, address, wordsValid: true }))
     const split = address.split(".")
     if (isAddress(address)) {
       address = checksumAddress(address)
@@ -101,6 +110,7 @@ const Home: NextPage = () => {
     } else {
       setCardState(({ ...state }) => ({ ...state, addressValid: false, words: "", wordsValid: true }))
     }
+    setLoading(false)
   }, [API, client])
 
   const handleRandom = useCallback(async () => {
@@ -158,10 +168,12 @@ const Home: NextPage = () => {
   useEffect(() => {
     if (query.index && !isNaN(Number(query.index))) {
       (async () => {
-        setCardState(({ ...state }) => ({ ...state, monic: undefined, address: "loading...", words: "loading..." }))
+        setLoading(true)
+        setCardState(({ ...state }) => ({ ...state, monic: undefined }))
         const res = await fetch(`${API}/index/${query.index}`)
         const monic = await res.json() as Monic
         setCardState(({ ...state }) => ({ ...state, address: checksumAddress(monic.address), words: monic.monic, monic }))
+        setLoading(false)
       })()
     }
   }, [API, query])
@@ -172,13 +184,18 @@ const Home: NextPage = () => {
 
   let failureBorder = "" //"border-red-500 border-2 rounded-lg"
 
+  let addrLink = !loading && cardState.words ? `${cardState.words.split(' ').join('-')}.addr.id` : "addr.id"
+
+  console.log("cardState", cardState)
+  console.log("loading", loading)
+
   return (
     <div className="container flex flex-col items-center justify-center py-2 pt-20">
       <Card className="w-5/6 max-w-lg shadow-[0px_10px_60px_15px_rgba(48,80,128,0.4)]">
         <div className="mb-3 w-full">
           <form onSubmit={(e) => { e.preventDefault(); handleAddressChange(cardState.address, true) }}>
             <TextInput
-              value={cardState.address}
+              value={loading ? "loading..." : cardState.address}
               onFocus={(event) => event.target.select()}
               onChange={({ target }) => handleAddressChange(target.value, false)}
               className={`font-bold ${cardState.addressValid ? "" : failureBorder}`}
@@ -191,7 +208,7 @@ const Home: NextPage = () => {
         <div className="mb-3 w-full">
           <TextInput
             id="wordsInput"
-            value={cardState.words}
+            value={loading ? "loading..." : cardState.words ?? "not found"}
             onFocus={(event) => event.target.select()}
             onChange={({ target }) => handleWordsChange(target.value)}
             className={`lowercase font-bold ${cardState.addressValid ? "" : failureBorder}`}
@@ -200,22 +217,21 @@ const Home: NextPage = () => {
             }
             placeholder="Monic"
           />
-          {cardState.monic &&
-            <div className="mt-2 p-1 flex justify-center align-baseline shadow-lg border-2 border-blue-400 dark:border-blue-900 bg-blue-50 dark:bg-blue-950 rounded-lg">
-              <ThemeImage
-                srcDark={LightEnsMark}
-                srcLight={DarkEnsMark}
-                alt="ENS Mark"
-                className="h-4 w-auto mr-2 self-center" />
-              <Link
-                href={`https://app.ens.domains/${cardState.words.split(' ').join('.')}.addr.id`}
-                target="_blank"
-                className="text-blue-500 font-semibold hover:underline"
-              >
-                {cardState.words.split(' ').join('.')}.addr.id
-              </Link>
-            </div>
-          }
+          <div className="mt-2 p-1 flex justify-center align-baseline shadow-lg border-2 border-blue-400 dark:border-blue-900 bg-blue-50 dark:bg-blue-950 rounded-lg">
+            <ThemeImage
+              srcDark={LightEnsMark}
+              srcLight={DarkEnsMark}
+              alt="ENS Mark"
+              className="h-4 w-auto mr-2 self-center" />
+            <Link
+              href={`https://app.ens.domains/${addrLink}`}
+              target="_blank"
+              className="text-blue-500 font-semibold hover:underline"
+            >
+              {addrLink}
+            </Link>
+
+          </div>
         </div>
         <Button.Group className="w-full">
           <Button
