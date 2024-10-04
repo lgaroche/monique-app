@@ -52,15 +52,15 @@ const Home: NextPage = () => {
   const API = process.env.NEXT_PUBLIC_MONIQUE_API ?? "https://api.monique.app"
 
   const handleWordsChange = useCallback(async (words: string) => {
-    setLoading(true)
     setCardState(({ ...state }) => ({ ...state, words }))
-    if (!words.split(" ").every((word) => WORDS.includes(word.toLowerCase()))) {
+    const spacedWords = words.replace("-", " ")
+    if (!spacedWords.split(" ").every((word) => WORDS.includes(word.toLowerCase()))) {
       setCardState(({ ...state }) => ({ ...state, wordsValid: false, address: "", monic: undefined }))
       return
     }
     setCardState(({ ...state }) => ({ ...state, wordsValid: true, addressValid: true }))
     try {
-      const res = await fetch(`${API}/resolve/${words.toLowerCase()}`)
+      const res = await fetch(`${API}/resolve/${spacedWords.toLowerCase()}`)
       if (res.status !== 200) {
         setCardState(({ ...state }) => ({ ...state, address: "not found", monic: undefined }))
       } else {
@@ -68,9 +68,8 @@ const Home: NextPage = () => {
         setCardState(({ ...state }) => ({ ...state, address: checksumAddress(monic.address), monic }))
       }
     } catch (e) {
-      console.error(e)
+      console.log(e)
     }
-    setLoading(false)
   }, [API])
 
   const handleAddressChange = useCallback(async (address: string, force: boolean) => {
@@ -88,7 +87,6 @@ const Home: NextPage = () => {
         setCardState(({ ...state }) => ({ ...state, words: undefined, monic: undefined, addressValid: true }))
       }
     }
-    setLoading(true)
     setCardState(({ ...state }) => ({ ...state, address, wordsValid: true }))
     const split = address.split(".")
     if (isAddress(address)) {
@@ -98,19 +96,15 @@ const Home: NextPage = () => {
       let ensAddress = null
       try {
         ensAddress = await client.getEnsAddress({ name: address })
-        console.log(ensAddress)
       } catch (e) {
         console.log(e)
       }
       if (ensAddress) {
         await fetchAddress(ensAddress)
-      } else {
-        setCardState(({ ...state }) => ({ ...state, words: "", monic: undefined, addressValid: false }))
       }
     } else {
       setCardState(({ ...state }) => ({ ...state, addressValid: false, words: "", wordsValid: true }))
     }
-    setLoading(false)
   }, [API, client])
 
   const handleRandom = useCallback(async () => {
@@ -152,9 +146,7 @@ const Home: NextPage = () => {
     } else if (cardState.monic) {
       const { address } = cardState
       if (isAddress(address)) {
-        console.log("isAddress", address)
         client.getEnsName({ address }).then((name) => {
-          console.log("getEnsName", name)
           setHelper(name ?? checksumAddress(address))
         })
       } else {
@@ -184,10 +176,9 @@ const Home: NextPage = () => {
 
   let failureBorder = "" //"border-red-500 border-2 rounded-lg"
 
-  let addrLink = !loading && cardState.words ? `${cardState.words.split(' ').join('-')}.addr.id` : "addr.id"
+  let addrLink = (!loading && cardState.wordsValid && cardState.words) ? `${cardState.words.split(' ').join('-')}.addr.id` : "addr.id"
 
   console.log("cardState", cardState)
-  console.log("loading", loading)
 
   return (
     <div className="container flex flex-col items-center justify-center py-2 pt-20">
