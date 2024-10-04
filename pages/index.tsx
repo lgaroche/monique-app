@@ -53,7 +53,7 @@ const Home: NextPage = () => {
 
   const handleWordsChange = useCallback(async (words: string) => {
     setCardState(({ ...state }) => ({ ...state, words }))
-    const spacedWords = words.replace("-", " ")
+    const spacedWords = words.replaceAll("-", " ")
     if (!spacedWords.split(" ").every((word) => WORDS.includes(word.toLowerCase()))) {
       setCardState(({ ...state }) => ({ ...state, wordsValid: false, address: "", monic: undefined }))
       return
